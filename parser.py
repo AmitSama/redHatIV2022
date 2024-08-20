@@ -1,4 +1,4 @@
-import sys, pdb, requests
+import sys, pdb, requests, os
 
 def double(x):
     x = int(x)
@@ -7,9 +7,20 @@ def double(x):
     print('Double of ', x , 'is ', r);
 
 def downloadFileFromWeb(url):
+    filename = 'gitreposts.txt'
     r = requests.get(url, allow_redirects=True)
-    open('gitreposts.txt', 'wb').write(r.content) 
-    
+    if os.path.exists(filename):
+        print('Deleting existing file {filename}')
+        os.remove(filename)
+    open(filename, 'wb').write(r.content)
+    parseDownloadedFile(filename)
+  
+def parseDownloadedFile(filename):
+    print('Parsing downloaded file {filename}')
+    file = open(filename)
+    for line in file:
+        txt = line.split(' ')
+        print(txt[0], "->", txt[1])
 
 def main():
     print("Hello World")
