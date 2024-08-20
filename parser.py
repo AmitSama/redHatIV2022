@@ -1,4 +1,5 @@
-import sys, pdb, requests, os
+import sys, pdb, requests, os, hashlib, shutil
+import urllib.request
 
 def double(x):
     x = int(x)
@@ -21,6 +22,48 @@ def parseDownloadedFile(filename):
     for line in file:
         txt = line.split(' ')
         print(txt[0], "->", txt[1])
+        print('Going to download git repo', txt[0])
+        downloadGitRepository(txt[0])
+        break
+        
+def downloadGitRepository(url):
+    path = '.\\temp\\'
+    if not os.path.exists(path):
+        os.mkdir(path)
+    else:
+        shutil.rmtree(path)
+    newUrlForZipDownload = createDownloadZipUrlFromRepoUrl(url)
+    print('New url for zip download is ', newUrlForZipDownload)
+    r = requests.get(newUrlForZipDownload, allow_redirects=True)
+    #breakpoint()
+    filename = url.split('/')[-1:][0] + '-master.zip' # https://github.com/app-sre/container-images.git -> container-images
+    completeFilePath = os.path.join(path, filename)
+    #os.makedirs(completeFilePath)
+    open(completeFilePath,'wb').write(r.content)
+    
+def createDownloadZipUrlFromRepoUrl(url):
+    parts = url.split('/')[3:-1]
+    lastPart = url.split('/')[-1:][0]
+    lastPart = lastPart.replace('.git', '')
+    joinParts = '/'.join(parts)
+    newUrl = 'https://codeload.github.com/' + joinParts
+    #breakpoint()
+    #newUrl = newUrl.join(parts)
+    newUrl = newUrl + '/' + lastPart + '/zip/refs/heads/master'
+    return newUrl
+    
+  
+def verifyChecksum(filename, checksum):
+    hash = hashlib.sha256()
+    with open(filename, 'rt') as fh:
+        while True:
+            data = fh.read(4096)
+            if len(data) == 0:
+                break
+            else:
+                h.update(data)
+    return checksum == h.hexdigest()
+                    
 
 def main():
     print("Hello World")
