@@ -1,5 +1,4 @@
-import sys, pdb, requests, os, hashlib, shutil
-import urllib.request
+import sys, pdb, requests, os, hashlib, shutil, zipfile
 
 def double(x):
     x = int(x)
@@ -13,7 +12,9 @@ def downloadFileFromWeb(url):
     if os.path.exists(filename):
         print('Deleting existing file {filename}')
         os.remove(filename)
-    open(filename, 'wb').write(r.content)
+    file = open(filename, 'wb')
+    file.write(r.content)
+    file.close()
     parseDownloadedFile(filename)
   
 def parseDownloadedFile(filename):
@@ -25,30 +26,68 @@ def parseDownloadedFile(filename):
         print('Going to download git repo', txt[0])
         downloadGitRepository(txt[0])
         break
+    file.close()
         
 def downloadGitRepository(url):
-    path = '.\\temp\\'
+    path = 'temp'
     if not os.path.exists(path):
         os.mkdir(path)
-    else:
-        shutil.rmtree(path)
     newUrlForZipDownload = createDownloadZipUrlFromRepoUrl(url)
     print('New url for zip download is ', newUrlForZipDownload)
     r = requests.get(newUrlForZipDownload, allow_redirects=True)
-    #breakpoint()
-    filename = url.split('/')[-1:][0] + '-master.zip' # https://github.com/app-sre/container-images.git -> container-images
-    completeFilePath = os.path.join(path, filename)
-    #os.makedirs(completeFilePath)
-    open(completeFilePath,'wb').write(r.content)
-    
+    #https://github.com/app-sre/container-images.git -> container-images
+    filename = url.split('/')[-1:][0].replace('.git','') + '-master.zip'
+    os.chdir(path)
+    print(os.getcwd())
+    if os.path.exists(filename):
+        print('removing file', filename)
+        os.remove(filename)
+    file = open(filename,'wb')
+    file.write(r.content)
+    file.close()
+    os.chdir('..\\')
+    print(os.getcwd())
+    image = openZipFile(filename, path)
+
+def openZipFile(filename, dirname):
+    os.chdir(dirname)
+    print(os.getcwd())
+    print('Open zipfile ', filename)
+    imageName = ''
+    with zipfile.ZipFile(filename, mode='r') as zp:
+        for info in zp.infolist():
+            if info.filename.endswith('Dockerfile'):
+                print('----> ', info.filename)
+                #dockerFileName = 'docker_' + filename + '_' + info.filename
+                #file = open(dockerFileName, 'wt')
+                with zp.open(info) as dockerfile:
+                    #print(dockerfile.readlines())
+                    for line in dockerfile.readlines():
+                        line = line.decode('utf-8')
+                        index = line.lower().find('from')
+                        #breakpoint()
+                        if index >= 0:
+                            parts = line.split(' ')
+                            imageName = parts[1]
+                            print(parts[1])
+                            break
+                    '''#
+                        #if line[0].strip().startswith('From'):
+                        print(line.decode('utf-8').replace('\\b', ''))
+                        print('\\n')
+                        print('\\n')
+                    #'''
+                dockerfile.close()
+    zp.close()
+    return imageName
+
+
 def createDownloadZipUrlFromRepoUrl(url):
     parts = url.split('/')[3:-1]
     lastPart = url.split('/')[-1:][0]
     lastPart = lastPart.replace('.git', '')
     joinParts = '/'.join(parts)
     newUrl = 'https://codeload.github.com/' + joinParts
-    #breakpoint()
-    #newUrl = newUrl.join(parts)
     newUrl = newUrl + '/' + lastPart + '/zip/refs/heads/master'
     return newUrl
     
@@ -62,6 +101,7 @@ def verifyChecksum(filename, checksum):
                 break
             else:
                 h.update(data)
+    fh.close()
     return checksum == h.hexdigest()
                     
 
