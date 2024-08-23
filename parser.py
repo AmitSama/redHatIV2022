@@ -1,4 +1,32 @@
-import sys, pdb, requests, os, hashlib, shutil, zipfile
+import sys, pdb, requests, os, hashlib, shutil, zipfile, json
+
+class Result:
+    def __init__(self):
+        self.result = dict()
+        self.result['data'] = list()
+    
+    def __str__(self):
+        y = json.dumps(self,
+            default=lambda o: o.__dict__,
+            #sort_keys=True,
+            indent=4
+            )
+        return (y)
+    
+    def addRepository(self, repo):
+        self.result.get('data').append(repo)
+        
+class Repository:
+    def __init__(self, url, dockerfile):
+        self.repository = url
+        self.dockerfile = dockerfile
+            
+class Dockerfile:
+    def __init__(self, path, baseImages):
+        self.path = path
+        self.baseImages = baseImages
+    
+result = Result()
 
 def double(x):
     x = int(x)
@@ -47,9 +75,19 @@ def downloadGitRepository(url):
     file.close()
     os.chdir('..\\')
     print(os.getcwd())
-    image = openZipFile(filename, path)
+    dockerfilePath, images = openZipFile(filename, path)
+    dfile = Dockerfile(dockerfilePath, images)
+    gitRepo = Repository(url, dfile)
+    #breakpoint()
+    result.addRepository(gitRepo)
+    print(result)
+
+    
 
 def openZipFile(filename, dirname):
+    dockerfilePath = ''
+    baseRepos = set()
+    stageNames = set()
     os.chdir(dirname)
     print(os.getcwd())
     print('Open zipfile ', filename)
@@ -57,29 +95,29 @@ def openZipFile(filename, dirname):
     with zipfile.ZipFile(filename, mode='r') as zp:
         for info in zp.infolist():
             if info.filename.endswith('Dockerfile'):
+                dockerfilePath = info.filename
                 print('----> ', info.filename)
-                #dockerFileName = 'docker_' + filename + '_' + info.filename
-                #file = open(dockerFileName, 'wt')
                 with zp.open(info) as dockerfile:
                     #print(dockerfile.readlines())
                     for line in dockerfile.readlines():
                         line = line.decode('utf-8')
-                        index = line.lower().find('from')
+                        index = line.lower().replace('\b', '').find('from')
                         #breakpoint()
-                        if index >= 0:
+                        if index == 0:
                             parts = line.split(' ')
-                            imageName = parts[1]
-                            print(parts[1])
-                            break
-                    '''#
-                        #if line[0].strip().startswith('From'):
-                        print(line.decode('utf-8').replace('\\b', ''))
-                        print('\\n')
-                        print('\\n')
-                    #'''
+                            #breakpoint()
+                            if len(parts) > 2:
+                                print(parts[3][:-1])
+                                stageNames.add(parts[3][:-1])
+                            if parts[1] not in baseRepos and parts[1] not in stageNames:
+                                baseRepos.add(parts[1])
+                                #print(baseRepos)
+                    repositoriesList = list(baseRepos)
                 dockerfile.close()
+                break
     zp.close()
-    return imageName
+    print(repositoriesList)
+    return dockerfilePath, repositoriesList
 
 
 def createDownloadZipUrlFromRepoUrl(url):
@@ -115,3 +153,4 @@ if __name__ == "__main__":
     #args = sys.argv
     #globals()[args[1]](args[2])
     downloadFileFromWeb("https://gist.githubusercontent.com/jmelis/c60e61a893248244dc4fa12b946585c4/raw/25d39f67f2405330a6314cad64fac423a171162c/sources.txt")
+
