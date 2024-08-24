@@ -53,7 +53,7 @@ def parseDownloadedFile(filename):
         print(txt[0], "->", txt[1])
         print('Going to download git repo', txt[0])
         downloadGitRepository(txt[0])
-        break
+        #break
     file.close()
         
 def downloadGitRepository(url):
@@ -61,7 +61,7 @@ def downloadGitRepository(url):
     if not os.path.exists(path):
         os.mkdir(path)
     newUrlForZipDownload = createDownloadZipUrlFromRepoUrl(url)
-    print('New url for zip download is ', newUrlForZipDownload)
+    print('New url for zip download is, Downloading zipfile ...', newUrlForZipDownload)
     r = requests.get(newUrlForZipDownload, allow_redirects=True)
     #https://github.com/app-sre/container-images.git -> container-images
     filename = url.split('/')[-1:][0].replace('.git','') + '-master.zip'
@@ -73,45 +73,44 @@ def downloadGitRepository(url):
     file = open(filename,'wb')
     file.write(r.content)
     file.close()
-    os.chdir('..\\')
-    print(os.getcwd())
-    dockerfilePath, images = openZipFile(filename, path)
+    dockerfilePath, images = openZipFile(filename)
     dfile = Dockerfile(dockerfilePath, images)
     gitRepo = Repository(url, dfile)
     #breakpoint()
     result.addRepository(gitRepo)
+    if (os.path.isfile(filename)):
+        print('Information found, Removing zip file')
+        os.remove(filename)
     print(result)
+    os.chdir('..\\')
+    print(os.getcwd())
 
     
 
-def openZipFile(filename, dirname):
+def openZipFile(filename):
     dockerfilePath = ''
     baseRepos = set()
     stageNames = set()
-    os.chdir(dirname)
-    print(os.getcwd())
+    #print(os.getcwd())
     print('Open zipfile ', filename)
     imageName = ''
     with zipfile.ZipFile(filename, mode='r') as zp:
         for info in zp.infolist():
             if info.filename.endswith('Dockerfile'):
                 dockerfilePath = info.filename
-                print('----> ', info.filename)
+                #print('----> ', info.filename)
                 with zp.open(info) as dockerfile:
                     #print(dockerfile.readlines())
                     for line in dockerfile.readlines():
-                        line = line.decode('utf-8')
-                        index = line.lower().replace('\b', '').find('from')
-                        #breakpoint()
+                        line = line.decode('utf-8').replace('\b','').replace('\n','')
+                        index = line.lower().find('from')
                         if index == 0:
                             parts = line.split(' ')
-                            #breakpoint()
                             if len(parts) > 2:
                                 print(parts[3][:-1])
-                                stageNames.add(parts[3][:-1])
+                                stageNames.add(parts[3])
                             if parts[1] not in baseRepos and parts[1] not in stageNames:
                                 baseRepos.add(parts[1])
-                                #print(baseRepos)
                     repositoriesList = list(baseRepos)
                 dockerfile.close()
                 break
