@@ -52,11 +52,11 @@ def parseDownloadedFile(filename):
         txt = line.split(' ')
         print(txt[0], "->", txt[1])
         print('Going to download git repo', txt[0])
-        downloadGitRepository(txt[0])
+        downloadGitRepository(txt[0], txt[1])
         #break
     file.close()
         
-def downloadGitRepository(url):
+def downloadGitRepository(url, checksum):
     path = 'temp'
     if not os.path.exists(path):
         os.mkdir(path)
@@ -73,6 +73,9 @@ def downloadGitRepository(url):
     file = open(filename,'wb')
     file.write(r.content)
     file.close()
+    '''if verifyChecksum(filename, checksum) == False:
+        print('Error : Checksum can not verified for file : ', filename, ' checksum  = ', checksum)
+        return'''
     dockerfilePath, images = openZipFile(filename)
     dfile = Dockerfile(dockerfilePath, images)
     gitRepo = Repository(url, dfile)
@@ -85,7 +88,6 @@ def downloadGitRepository(url):
     os.chdir('..\\')
     print(os.getcwd())
 
-    
 
 def openZipFile(filename):
     dockerfilePath = ''
@@ -128,17 +130,20 @@ def createDownloadZipUrlFromRepoUrl(url):
     newUrl = newUrl + '/' + lastPart + '/zip/refs/heads/master'
     return newUrl
     
-  
+  # assuming the assignment had put random checksum, which can be verified
 def verifyChecksum(filename, checksum):
-    hash = hashlib.sha256()
-    with open(filename, 'rt') as fh:
+    print('Verifying file checksum ', filename, '  ', checksum)
+    blocksize = 2**20
+    h = hashlib.sha1()
+    with open(filename, 'rb') as fh:
         while True:
-            data = fh.read(4096)
+            data = fh.read(blocksize)
             if len(data) == 0:
                 break
             else:
                 h.update(data)
     fh.close()
+    print('Calculated checksum ', h.hexdigest())
     return checksum == h.hexdigest()
                     
 
@@ -146,6 +151,7 @@ def main():
     print("Hello World")
     r = double(2);
     print("Double of 2 is ", r);
+
 
 if __name__ == "__main__":
 	#main()
