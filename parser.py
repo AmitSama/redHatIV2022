@@ -57,15 +57,15 @@ def parseDownloadedFile(filename):
     file.close()
         
 def downloadGitRepository(url, checksum):
-    path = 'temp'
-    if not os.path.exists(path):
-        os.mkdir(path)
+    #path = 'temp'
+    #if not os.path.exists(path):
+    #    os.mkdir(path)
     newUrlForZipDownload = createDownloadZipUrlFromRepoUrl(url)
     print('New url for zip download is, Downloading zipfile ...', newUrlForZipDownload)
     r = requests.get(newUrlForZipDownload, allow_redirects=True)
     #https://github.com/app-sre/container-images.git -> container-images
     filename = url.split('/')[-1:][0].replace('.git','') + '-master.zip'
-    os.chdir(path)
+    #os.chdir(path)
     print(os.getcwd())
     if os.path.exists(filename):
         print('removing file', filename)
@@ -85,7 +85,7 @@ def downloadGitRepository(url, checksum):
         print('Information found, Removing zip file')
         os.remove(filename)
     print(result)
-    os.chdir('..\\')
+    #os.chdir('..\\')
     print(os.getcwd())
 
 
