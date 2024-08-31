@@ -21,7 +21,12 @@ USER ${uid}:${gid}
 RUN pip3 install requests
 WORKDIR ${user}
 
-ADD parser.py ./
+ARG REPOSITORY_LIST_URL
+ENV REPOSITORY_LIST_URL $REPOSITORY_LIST_URL
 
-CMD ["bash"]
+ADD parser.py ./
+ADD script.sh ./
+
+CMD ["/bin/sh", "-c", "export"]
+ENTRYPOINT ["./script.sh"]
 	
