@@ -17,15 +17,18 @@ RUN groupadd -g ${gid} ${group}
 RUN useradd -u ${uid} -g ${group} -s /bin/sh -m ${user} # <--- the '-m' create a user home directory
 USER ${uid}:${gid}
 
-# install python modules
-RUN pip3 install requests
 WORKDIR ${user}
+
+COPY parser.py ./
+COPY script.sh ./
+COPY requirements.txt ./
+
+# installing dependencies with requirements.txt
+RUN pip3 install -r ./requirements.txt
 
 ARG REPOSITORY_LIST_URL
 ENV REPOSITORY_LIST_URL $REPOSITORY_LIST_URL
 
-ADD parser.py ./
-ADD script.sh ./
 
 CMD ["/bin/sh", "-c", "export"]
 ENTRYPOINT ["./script.sh"]

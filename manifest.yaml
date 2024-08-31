@@ -1,0 +1,25 @@
+# documentation https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/cron-job-v1/
+apiVersion: batch/v1
+kind: CronJob
+metadata: 
+    name: docker-fedora-python
+spec:
+    #schedule: "18 10 * * 6" # evening 18:10 every saturday(6)
+    schedule: "*/1 * * * *" # evening 18:10 every saturday(6)
+    jobTemplate:
+        metadata:
+            name: docker-fedora-python
+        spec:
+            template:
+                spec: # pod specification
+                    containers:
+                        - image: docker/fedora-python:v1.0
+                          imagePullPolicy: Never
+                          name: docker-fedora-python
+                          resources: {}
+                          #command:
+                          #- /bin/sh
+                          #- -c
+                          #- python 
+                          #- parser.py
+                    restartPolicy: OnFailure

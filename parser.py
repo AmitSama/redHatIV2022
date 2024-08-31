@@ -44,6 +44,9 @@ def downloadFileFromWeb(url):
     file.write(r.content)
     file.close()
     parseDownloadedFile(filename)
+    if os.path.exists(filename):
+        os.remove(filename)
+    
   
 def parseDownloadedFile(filename):
     print('Parsing downloaded file {filename}')
